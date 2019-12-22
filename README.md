@@ -8,11 +8,9 @@ To install dependencies:
 ```npm install```
 
 To run:
-```node index```
+```npm start```
 
 Go to http://localhost:4000 to see the graph. Or you can open index.html to see the graph. To publically host index.html, host it on any static hosting service.
 
 ### working
 ![Temperature Plot](temperature-plot.gif)
-
-Feel free to fork!
