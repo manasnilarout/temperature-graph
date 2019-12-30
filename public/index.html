@@ -27,15 +27,15 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.4/socket.io.js"></script>
 
     <script>
-        var socket = io.connect('http://localhost:4000'); //connect to server
+        const socket = io.connect('http://localhost:4000'); //connect to server
 
-        var ctx1 = document.getElementById('myTempChart').getContext('2d');
+        const ctx1 = document.getElementById('myTempChart').getContext('2d');
         const tempChart = getChartOptions(ctx1, 'Temperature', { border: '3375ff', background: '98db34' });
 
-        var ctx2 = document.getElementById('myHumidityChart').getContext('2d');
+        const ctx2 = document.getElementById('myHumidityChart').getContext('2d');
         const humidityChart = getChartOptions(ctx2, 'Humidity', {});
 
-        var ctx3 = document.getElementById('myAirQChart').getContext('2d');
+        const ctx3 = document.getElementById('myAirQChart').getContext('2d');
         const airQChart = getChartOptions(ctx3, 'AirQ', { border: '33FF57', background: 'FF3357' });
 
         // Create a chart instance and return object
