@@ -25,6 +25,7 @@
     <link href="https://fonts.googleapis.com/css?family=Lato" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.4/socket.io.js"></script>
+    
     <script>
         var socket = io.connect('http://localhost:4000'); //connect to server
 
@@ -37,6 +38,7 @@
         var ctx3 = document.getElementById('myAirQChart').getContext('2d');
         const airQChart = getChartOptions(ctx3, 'AirQ', { border: '33FF57', background: 'FF3357' });
 
+        // Create a chart instance and return object
         function getChartOptions(context, parameter, hexColor) {
             return new Chart(context, {
                 // The type of chart we want to create
@@ -68,21 +70,19 @@
         socket.on('humidity', plotGraph);
         socket.on('airQ', plotGraph);
 
+        // Plot graph for different readings.
         function plotGraph(data) {
             let chart;
             let sensorData;
 
             if (data.temp) {
                 sensorData = data.temp;
-                console.log(`Found temp data [Temp: ${sensorData}].`);
                 chart = tempChart;
             } else if (data.humidity) {
                 sensorData = data.humidity;
-                console.log(`Found humidity data [Humidity: ${sensorData}].`);
                 chart = humidityChart;
             } else if (data.airQ) {
                 sensorData = data.airQ;
-                console.log(`Found airQ data [AirQ: ${sensorData}].`);
                 chart = airQChart;
             }
 
@@ -108,6 +108,7 @@
         }
     </script>
 </body>
+
 <style>
     h1 {
         text-align: center;

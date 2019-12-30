@@ -11,28 +11,33 @@ app.use(express.static('public'));
 
 const SerialPort = require('serialport');
 const Readline = SerialPort.parsers.Readline;
-const port = new SerialPort('COM12'); //Connect serial port to port COM12. Because my Arduino Board is connected on port COM3. See yours on Arduino IDE -> Tools -> Port
+const port = new SerialPort('COM12'); //Connect serial port to port COM12.
 const parser = port.pipe(new Readline({ delimiter: '\r\n' })); //Read the line only when new line comes.
 parser.on('data', (dataString) => { //Read data
     parseSerialPortData(dataString);
 });
 
 function parseSerialPortData(dataString) {
+    // Regular expressions for get readings
     const tempRegEX = /Temperature:\s(\d+\.\d+)/;
     const humidityRegEX = /Humidity:\s(\d+\.\d+)/;
     const airQRegEX = /Air_Quality:\s(\d+)/;
+
+    // Temperature reading
     const temp = dataString.match(tempRegEX) ? dataString.match(tempRegEX)[1] : '';
 
     if (temp) {
         emitData(temp, 'temp');
     }
 
+    // Humidity reading
     const humidity = dataString.match(humidityRegEX) ? dataString.match(humidityRegEX)[1] : '';
 
     if (humidity) {
         emitData(humidity, 'humidity');
     }
 
+    // AirQ reading
     const airQ = dataString.match(airQRegEX) ? dataString.match(airQRegEX)[1] : '';
 
     if (airQ) {
@@ -40,6 +45,11 @@ function parseSerialPortData(dataString) {
     }
 }
 
+/**
+ * 
+ * @param {any} data Data that is to be emitted in the socket connection
+ * @param {string} param Parameter name to be passed
+ */
 function emitData(data, param) {
     const now = new Date();
     io.sockets.emit(param, {
@@ -66,6 +76,7 @@ function emitData(data, param) {
 //     return Math.floor(Math.random() * (max - min + 1)) + min;
 // }
 
+// Emit connection
 io.on('connection', (socket) => {
     console.log("Client connected."); //show a log as a new client connects.
 })
