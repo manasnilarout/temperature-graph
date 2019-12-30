@@ -46,7 +46,7 @@ function parseSerialPortData(dataString) {
 }
 
 /**
- * 
+ * Method to emit data in the open socket connection
  * @param {any} data Data that is to be emitted in the socket connection
  * @param {string} param Parameter name to be passed
  */
