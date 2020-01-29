@@ -1,11 +1,39 @@
-void setup() {
-  Serial.begin(9600); //Connect to serial port with rate of 9600bps.
-  delay(1000);
+
+#include "DHT.h"
+
+#define DHTPIN 2
+#define DHTTYPE DHT11
+#define sensor A0
+#define led 3
+
+DHT dht(DHTPIN, DHTTYPE);
+
+void setup()
+{
+  Serial.begin(9600);
+  dht.begin();
+  pinMode(led, OUTPUT);
+  digitalWrite(led, LOW);
 }
 
-void loop() {
-  int value = analogRead(A3); //Read the value from temperature sensor
-  int tempC = value*0.48828125; //Convert it into temp in C.
-  Serial.println(tempC); //Print it on Serial Monitor.
-  delay(60000); //Delay, specifies gap between two readings in miliseconds.
+void loop()
+{
+  int air_quality = analogRead(sensor);
+  float h = dht.readHumidity();
+  float t = dht.readTemperature();
+  delay(2000);
+  Serial.print("Temperature: ");
+  Serial.println(t);
+  Serial.print("Humidity: ");
+  Serial.println(h);
+  Serial.print("Air_Quality: ");
+  Serial.println(air_quality);
+  if (t >= 35 || air_quality >= 400)
+  {
+    digitalWrite(led, HIGH);
+  }
+  else
+  {
+    digitalWrite(led, LOW);
+  }
 }
