@@ -10,8 +10,8 @@ const CONSTANTS = {
         }
     },
     THRESHOLD: {
-        TEMPERATURE: 45,
-        HUMIDITY: 30,
+        TEMPERATURE: 35,
+        HUMIDITY: 200,
         AIR_Q: 400
     }
 };
