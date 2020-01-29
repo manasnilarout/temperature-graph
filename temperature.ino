@@ -1,4 +1,3 @@
-
 #include "DHT.h"
 
 #define DHTPIN 2
@@ -21,7 +20,7 @@ void loop()
   int air_quality = analogRead(sensor);
   float h = dht.readHumidity();
   float t = dht.readTemperature();
-  
+
   delay(2000);
 
   Serial.print("Temperature: ");
