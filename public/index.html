@@ -10,102 +10,194 @@
     <h1>Temperature, Humidity and AirQ Graph</h1>
     <h4>Date: <span id="date"></span></h4>
 
-    <div class="chart-container" style="width:30vw; margin: auto; display: inline-block; padding: 20px;">
+    <div class="chart-container" style="width:30vw; margin: auto; display: inline-block; padding: 15px;">
         <canvas id="myTempChart"></canvas>
     </div>
 
-    <div class="chart-container" style="width:30vw; margin: auto; display: inline-block; padding: 20px;">
+    <div class="chart-container" style="width:30vw; margin: auto; display: inline-block; padding: 15px;">
         <canvas id="myHumidityChart"></canvas>
     </div>
 
-    <div class="chart-container" style="width:30vw; margin: auto; display: inline-block; padding: 20px;">
+    <div class="chart-container" style="width:30vw; margin: auto; display: inline-block; padding: 15px;">
         <canvas id="myAirQChart"></canvas>
     </div>
 
+    <div class="display-readings">
+        <table id="myTable" class="cell-border" style="width:100%">
+            <thead>
+                <tr>
+                    <th>
+                        Temperature
+                    </th>
+                    <th>
+                        Humidity
+                    </th>
+                    <th>
+                        Air Quality
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>No readings</td>
+                    <td>No readings</td>
+                    <td>No readings</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
     <link href="https://fonts.googleapis.com/css?family=Lato" rel="stylesheet">
+    <link href="https://cdn.datatables.net/1.10.20/css/jquery.dataTables.min.css" rel="stylesheet">
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script type="text/javascript" charset="utf8"
+        src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.4/socket.io.js"></script>
 
     <script>
-        const socket = io.connect('http://localhost:4000'); //connect to server
+        $(document).ready(function () {
+            console.log('Inside jQuery table.');
 
-        const ctx1 = document.getElementById('myTempChart').getContext('2d');
-        const tempChart = getChartOptions(ctx1, 'Temperature', { border: '3375ff', background: '98db34' });
+            let dtTable;
 
-        const ctx2 = document.getElementById('myHumidityChart').getContext('2d');
-        const humidityChart = getChartOptions(ctx2, 'Humidity', {});
-
-        const ctx3 = document.getElementById('myAirQChart').getContext('2d');
-        const airQChart = getChartOptions(ctx3, 'AirQ', { border: '33FF57', background: 'FF3357' });
-
-        // Create a chart instance and return object
-        function getChartOptions(context, parameter, hexColor) {
-            return new Chart(context, {
-                // The type of chart we want to create
-                type: 'line',
-
-                // The data for our dataset
-                data: {
-                    labels: [],
-                    datasets: [{
-                        label: parameter,
-                        borderColor: `#${hexColor.border || 'ff5733'}`,
-                        data: [],
-                        fill: false,
-                        pointStyle: 'circle',
-                        backgroundColor: `#${hexColor.background || '3498db'}`,
-                        pointRadius: 4,
-                        pointHoverRadius: 6,
-                        lineTension: 0,
-                    }]
-                },
-
-                // Configuration options go here
-                options: {}
-
-            });
-        }
-
-        socket.on('temp', plotGraph);
-        socket.on('humidity', plotGraph);
-        socket.on('airQ', plotGraph);
-
-        // Plot graph for different readings.
-        function plotGraph(data) {
-            let chart;
-            let sensorData;
-
-            if (data.temp) {
-                sensorData = data.temp;
-                chart = tempChart;
-            } else if (data.humidity) {
-                sensorData = data.humidity;
-                chart = humidityChart;
-            } else if (data.airQ) {
-                sensorData = data.airQ;
-                chart = airQChart;
+            function fillDataTable(dataSet) {
+                console.log('Trying to put data in table.');
+                if (document.readyState === 'complete') {
+                    if (!dtTable) {
+                        dtTable = $('#myTable').DataTable({
+                            retrieve: true,
+                            deferRender: true,
+                            searching: false,
+                            paging: false,
+                            data: dataSet,
+                            columns: [
+                                { data: 'temp' },
+                                { data: 'humidity' },
+                                { data: 'airQ' }
+                            ],
+                            rowCallback: function (row, data, index) {
+                                const dt = $(row).find('td');
+                                for (let i = 0; i < dt.length; i++) {
+                                    const content = dt[i].innerText;
+                                    if (i === 0 && content >= 45) {
+                                        $(dt[i]).css('background-color', '#de5d6e')
+                                    } else if (i === 1 && content >= 30) {
+                                        $(dt[i]).css('background-color', '#de5d6e')
+                                    } else if (i === 2 && content >= 30) {
+                                        $(dt[i]).css('background-color', '#de5d6e')
+                                    } else {
+                                        $(dt[i]).css('background-color', '#99ff9c')
+                                    }
+                                }
+                            }
+                        });
+                    } else {
+                        dtTable.clear();
+                        dtTable.rows.add(dataSet).draw();
+                    }
+                }
             }
 
-            if (!chart) {
-                return;
-            }
+            const socket = io.connect('http://localhost:4000'); //connect to server
 
-            document.getElementById('date').innerHTML = data.date; //update the date
-            if (chart.data.labels.length != 15) { //If we have less than 15 data points in the graph
-                chart.data.labels.push(data.time);  //Add time in x-axis
-                chart.data.datasets.forEach((dataset) => {
-                    dataset.data.push(sensorData); //Add temp in y-axis
+            const tempCtx = document.getElementById('myTempChart').getContext('2d');
+            const tempChart = getChartOptions(tempCtx, 'Temperature', { border: '3375ff', background: '98db34' });
+
+            const humidityCtx = document.getElementById('myHumidityChart').getContext('2d');
+            const humidityChart = getChartOptions(humidityCtx, 'Humidity', {});
+
+            const airQCtx = document.getElementById('myAirQChart').getContext('2d');
+            const airQChart = getChartOptions(airQCtx, 'AirQ', { border: '33FF57', background: 'FF3357' });
+
+            let readings = [];
+
+            // Create a chart instance and return object
+            function getChartOptions(context, parameter, hexColor) {
+                return new Chart(context, {
+                    // The type of chart we want to create
+                    type: 'line',
+
+                    // The data for our dataset
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: parameter,
+                            borderColor: `#${hexColor.border || 'ff5733'}`,
+                            data: [],
+                            fill: false,
+                            pointStyle: 'circle',
+                            backgroundColor: `#${hexColor.background || '3498db'}`,
+                            pointRadius: 4,
+                            pointHoverRadius: 6,
+                            lineTension: 0,
+                        }]
+                    },
+
+                    // Configuration options go here
+                    options: {}
+
                 });
-            } else { //If there are already 15 data points in the graph.
-                chart.data.labels.shift(); //Remove first time data
-                chart.data.labels.push(data.time); //Insert latest time data
-                chart.data.datasets.forEach((dataset) => {
-                    dataset.data.shift(); //Remove first temp data
-                    dataset.data.push(sensorData); //Insert latest temp data
-                });
             }
-            chart.update(); //Update the graph.
-        }
+
+            socket.on('temp', plotGraph);
+            socket.on('humidity', plotGraph);
+            socket.on('airQ', plotGraph);
+
+            let dataObj = {};
+
+            // Plot graph for different readings.
+            function plotGraph(data) {
+                let chart;
+                let sensorData;
+
+                if (data.temp) {
+                    sensorData = data.temp;
+                    dataObj.temp = sensorData;
+                    chart = tempChart;
+                } else if (data.humidity) {
+                    sensorData = data.humidity;
+                    dataObj.humidity = sensorData;
+                    chart = humidityChart;
+                } else if (data.airQ) {
+                    sensorData = data.airQ;
+                    dataObj.airQ = sensorData;
+                    chart = airQChart;
+                }
+
+                if (!chart) {
+                    return;
+                }
+
+                document.getElementById('date').innerHTML = data.date; //update the date
+                if (chart.data.labels.length != 15) { //If we have less than 15 data points in the graph
+                    chart.data.labels.push(data.time);  //Add time in x-axis
+                    chart.data.datasets.forEach((dataset) => {
+                        dataset.data.push(sensorData); //Add temp in y-axis
+                    });
+                } else { //If there are already 15 data points in the graph.
+                    chart.data.labels.shift(); //Remove first time data
+                    chart.data.labels.push(data.time); //Insert latest time data
+                    chart.data.datasets.forEach((dataset) => {
+                        dataset.data.shift(); //Remove first temp data
+                        dataset.data.push(sensorData); //Insert latest temp data
+                    });
+                }
+                chart.update(); //Update the graph.
+
+                if (Object.keys(dataObj).length === 3) {
+                    readings.push(dataObj);
+
+                    if (readings.length === 5) {
+                        fillDataTable(readings);
+                        readings = [];
+                    }
+                    dataObj = {};
+                }
+            }
+        });
+
     </script>
 </body>
 

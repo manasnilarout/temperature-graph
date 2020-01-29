@@ -1,9 +1,31 @@
+// All the constants are maintained here.
+const CONSTANTS = {
+    ACCOUNT_SID: 'TWILIO_SID',
+    AUTH_TOKEN: 'TWILIO_TOKEN',
+    CONTACTS: {
+        SENDER: '14155238886',
+        RECEIVER: {
+            MANAS: '8093773107',
+            KRISHNA: '8327791315'
+        }
+    },
+    THRESHOLD: {
+        TEMPERATURE: 45,
+        HUMIDITY: 30,
+        AIR_Q: 400
+    }
+};
+
+const accountSid = CONSTANTS.ACCOUNT_SID;
+const authToken = CONSTANTS.AUTH_TOKEN;
+
+const client = require('twilio')(accountSid, authToken);
 const express = require('express');
 
 const app = express();
 const server = app.listen(4000, () => {
     console.log("Listening to requests on port 4000...");
-})
+});
 
 const io = require('socket.io')(server);
 
@@ -17,32 +39,63 @@ parser.on('data', (dataString) => { //Read data
     parseSerialPortData(dataString);
 });
 
-function parseSerialPortData(dataString) {
-    // Regular expressions for get readings
-    const tempRegEX = /Temperature:\s(\d+\.\d+)/;
-    const humidityRegEX = /Humidity:\s(\d+\.\d+)/;
-    const airQRegEX = /Air_Quality:\s(\d+)/;
+/**
+ * Method to refine the text received in serial port.
+ * @param {string} dataString String that needs be refined
+ */
+async function parseSerialPortData(dataString) {
+    return new Promise(async (res, rej) => {
+        try {
+            // Regular expressions for get readings
+            const tempRegEX = /Temperature:\s(\d+\.\d+)/;
+            const humidityRegEX = /Humidity:\s(\d+\.\d+)/;
+            const airQRegEX = /Air_Quality:\s(\d+)/;
 
-    // Temperature reading
-    const temp = dataString.match(tempRegEX) ? dataString.match(tempRegEX)[1] : '';
+            const receiver = CONSTANTS.CONTACTS.RECEIVER.KRISHNA;
 
-    if (temp) {
-        emitData(temp, 'temp');
-    }
+            // Temperature reading
+            const temp = dataString.match(tempRegEX) ? dataString.match(tempRegEX)[1] : '';
 
-    // Humidity reading
-    const humidity = dataString.match(humidityRegEX) ? dataString.match(humidityRegEX)[1] : '';
+            if (temp) {
+                emitData(temp, 'temp');
+                if (Number(temp) >= CONSTANTS.THRESHOLD.TEMPERATURE) {
+                    await sendMessage(
+                        receiver,
+                        `Temperature exceeded *45 degrees*, current temperature is *${temp} degrees*. Please check the issue.`
+                    );
+                }
+            }
 
-    if (humidity) {
-        emitData(humidity, 'humidity');
-    }
+            // Humidity reading
+            const humidity = dataString.match(humidityRegEX) ? dataString.match(humidityRegEX)[1] : '';
 
-    // AirQ reading
-    const airQ = dataString.match(airQRegEX) ? dataString.match(airQRegEX)[1] : '';
+            if (humidity) {
+                emitData(humidity, 'humidity');
+                if (Number(humidity) >= CONSTANTS.THRESHOLD.HUMIDITY) {
+                    await sendMessage(
+                        receiver,
+                        `Humidity exceeded *30 grams per cubic metre*, current humidity in air is *${humidity} grams per cubic metre*. Please check the issue.`
+                    );
+                }
+            }
 
-    if (airQ) {
-        emitData(airQ, 'airQ');
-    }
+            // AirQ reading
+            const airQ = dataString.match(airQRegEX) ? dataString.match(airQRegEX)[1] : '';
+
+            if (airQ) {
+                emitData(airQ, 'airQ');
+                if (Number(airQ) >= CONSTANTS.THRESHOLD.AIR_Q) {
+                    await sendMessage(
+                        receiver,
+                        `AirQ exceeded *300 PPM(parts per million)*, current AirQ measure is *${airQ} PPM(parts per million)*. Please check the issue.`
+                    );
+                }
+            }
+            res();
+        } catch (e) {
+            rej(e);
+        }
+    });
 }
 
 /**
@@ -59,15 +112,41 @@ function emitData(data, param) {
     });
 }
 
-// setInterval(function () {
-//     var now = new Date();
-//     const temp = getRandomInt(45, 100);
-//     console.log(`Printing new temperature value: ${temp}`);
-//     io.sockets.emit('temp', {
-//         date: `${now.getDate()}-${now.getMonth() + 1}-${now.getFullYear()}`,
-//         time: `${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}`,
-//         temp: temp
-//     });
+/**
+ * Method to forward message using twilio sandbox number.
+ * @param {string} number Contact number where message needs to be forwarded.
+ * @param {string} messageBody Message body that needs to be forwarded.
+ */
+const sendMessage = async function (number, messageBody) {
+    return new Promise(async (res, rej) => {
+        try {
+            client.messages
+                .create({
+                    body: messageBody,
+                    from: `whatsapp:+${CONSTANTS.CONTACTS.SENDER}`,
+                    to: `whatsapp:+91${number}`
+                })
+                .then((message) => {
+                    console.log(`Message has been forwarded with SID: ${message.sid}`);
+                    res();
+                })
+                .done();
+        } catch (e) {
+            rej(e);
+        }
+    });
+}
+
+// setInterval(async function () {
+//     const temp = getRandomInt(25, 50);
+//     const humidity = getRandomInt(25, 45);
+//     const airQ = getRandomInt(250, 320);
+//     const decimals = getRandomInt(00, 99);
+
+//     const newString = `Temperature: ${temp}.${decimals}, Humidity: ${humidity}.${decimals}, Air_Quality: ${airQ}`;
+//     console.log(newString);
+
+//     await parseSerialPortData(newString);
 // }, 1000);
 
 // function getRandomInt(min, max) {
