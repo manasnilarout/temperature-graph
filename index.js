@@ -134,6 +134,7 @@ const sendMessage = async function (number, messageBody) {
 
     return new Promise(async (res, rej) => {
         try {
+            log(`Sending message to => ${number}`);
             client.messages
                 .create({
                     body: messageBody,
