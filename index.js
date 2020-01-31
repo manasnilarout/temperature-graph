@@ -1,9 +1,9 @@
 // All the constants are maintained here.
 const CONSTANTS = {
-    ACCOUNT_SID: 'TWILIO_SID',
-    AUTH_TOKEN: 'TWILIO_TOKEN',
+    ACCOUNT_SID: 'SID',
+    AUTH_TOKEN: 'TOKEN',
     CONTACTS: {
-        SENDER: '14155238886',
+        SENDER: '552120420682',
         RECEIVER: {
             MANAS: '8093773107',
             KRISHNA: '8327791315'
@@ -13,18 +13,26 @@ const CONSTANTS = {
         TEMPERATURE: 35,
         HUMIDITY: 200,
         AIR_Q: 400
-    }
+    },
+    WAIT_TIME: 30000
 };
 
 const accountSid = CONSTANTS.ACCOUNT_SID;
 const authToken = CONSTANTS.AUTH_TOKEN;
 
 const client = require('twilio')(accountSid, authToken);
+
+const wait = t => new Promise(resolve => setTimeout(resolve, t));
+const log = (message) => {
+    console.log(`[SERVER_LOGS] [${new Date().toISOString()}]: ${message}`);
+}
+let isTwilioReady = true;
+
 const express = require('express');
 
 const app = express();
 const server = app.listen(4000, () => {
-    console.log("Listening to requests on port 4000...");
+    log("Listening to requests on port 4000...");
 });
 
 const io = require('socket.io')(server);
@@ -93,6 +101,7 @@ async function parseSerialPortData(dataString) {
             }
             res();
         } catch (e) {
+            log(e.message);
             rej(e);
         }
     });
@@ -118,6 +127,11 @@ function emitData(data, param) {
  * @param {string} messageBody Message body that needs to be forwarded.
  */
 const sendMessage = async function (number, messageBody) {
+    if (!isTwilioReady) {
+        log('Waiting for twilio to be ready.');
+        return;
+    }
+
     return new Promise(async (res, rej) => {
         try {
             client.messages
@@ -127,24 +141,34 @@ const sendMessage = async function (number, messageBody) {
                     to: `whatsapp:+91${number}`
                 })
                 .then((message) => {
-                    console.log(`Message has been forwarded with SID: ${message.sid}`);
+                    log(`Message has been forwarded with SID: ${message.sid}`);
                     res();
                 })
                 .done();
+
+            isTwilioReady = false;
+            makeTwilioReady(CONSTANTS.WAIT_TIME);
         } catch (e) {
+            log(e.message);
             rej(e);
         }
     });
 }
 
+const makeTwilioReady = async (t) => {
+    await wait(t);
+    log('Making twilio ready for message forwarding');
+    isTwilioReady = true;
+}
+
 // setInterval(async function () {
 //     const temp = getRandomInt(25, 50);
-//     const humidity = getRandomInt(25, 45);
-//     const airQ = getRandomInt(250, 320);
+//     const humidity = getRandomInt(30, 120);
+//     const airQ = getRandomInt(250, 450);
 //     const decimals = getRandomInt(00, 99);
 
 //     const newString = `Temperature: ${temp}.${decimals}, Humidity: ${humidity}.${decimals}, Air_Quality: ${airQ}`;
-//     console.log(newString);
+//     log(newString);
 
 //     await parseSerialPortData(newString);
 // }, 1000);
@@ -157,5 +181,5 @@ const sendMessage = async function (number, messageBody) {
 
 // Emit connection
 io.on('connection', (socket) => {
-    console.log("Client connected."); //show a log as a new client connects.
+    log("Client connected."); //show a log as a new client connects.
 })
