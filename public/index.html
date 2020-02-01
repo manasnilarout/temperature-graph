@@ -4,35 +4,45 @@
 <head>
     <title>Sensor plot</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            background-image: url('iot_back.jpg');
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            background-size: cover;
+        }
+    </style>
 </head>
 
 <body>
-    <h1>Temperature, Humidity and AirQ Graph</h1>
-    <h4>Date: <span id="date"></span></h4>
+    <h1 style="color: snow;">Temperature, Humidity and AirQ Graph</h1>
+    <h4 style="color: snow;">Date: <span id="date" , style="color: wheat;"></span></h4>
 
-    <div class="chart-container" style="width:30vw; margin: auto; display: inline-block; padding: 15px;">
-        <canvas id="myTempChart"></canvas>
+    <div class="grid-container" style="display: grid; grid-template-columns: 30% 30% 30%; grid-gap: 3.33%;">
+        <div class="chart-container grid-item" style="background-color: rgb(255, 255, 255);">
+            <canvas id="myTempChart"></canvas>
+        </div>
+
+        <div class="chart-container grid-item" style="background-color: rgb(255, 255, 255);">
+            <canvas id="myHumidityChart"></canvas>
+        </div>
+
+        <div class="chart-container grid-item" style="background-color: rgb(255, 255, 255);">
+            <canvas id="myAirQChart"></canvas>
+        </div>
     </div>
 
-    <div class="chart-container" style="width:30vw; margin: auto; display: inline-block; padding: 15px;">
-        <canvas id="myHumidityChart"></canvas>
-    </div>
-
-    <div class="chart-container" style="width:30vw; margin: auto; display: inline-block; padding: 15px;">
-        <canvas id="myAirQChart"></canvas>
-    </div>
-
-    <div class="display-readings">
-        <table id="myTable" class="cell-border" style="width:100%">
-            <thead>
+    <div class="display-readings" style="padding-top: 20px;">
+        <table id="myTable" class="cell-border" style="width:80%; text-align: center; margin-left: 10%;">
+            <thead style="background-color: blue; color: white; font-weight: bold;">
                 <tr>
-                    <th>
+                    <th style="border:solid;">
                         Temperature
                     </th>
-                    <th>
+                    <th style="border:solid;">
                         Humidity
                     </th>
-                    <th>
+                    <th style="border:solid;">
                         Air Quality
                     </th>
                 </tr>
@@ -45,6 +55,10 @@
                 </tr>
             </tbody>
         </table>
+    </div>
+
+    <div class="message-display" style="height: 20px; text-align: left; font-weight: bold; display: none;">
+        <p>Message sent to: <span class="contact"></span></p>
     </div>
 
     <link href="https://fonts.googleapis.com/css?family=Lato" rel="stylesheet">
@@ -61,6 +75,7 @@
             console.log('Inside jQuery table.');
 
             let dtTable;
+            const wait = t => new Promise(resolve => setTimeout(resolve, t));
 
             function fillDataTable(dataSet) {
                 console.log('Trying to put data in table.');
@@ -82,13 +97,13 @@
                                 for (let i = 0; i < dt.length; i++) {
                                     const content = dt[i].innerText;
                                     if (i === 0 && content >= 45) {
-                                        $(dt[i]).css('background-color', '#de5d6e')
+                                        $(dt[i]).css({ 'background-color': '#F93005', 'font-weight': 'bold', 'color': 'white', 'border': 'ridge' })
                                     } else if (i === 1 && content >= 200) {
-                                        $(dt[i]).css('background-color', '#de5d6e')
+                                        $(dt[i]).css({ 'background-color': '#F93005', 'font-weight': 'bold', 'color': 'white', 'border': 'ridge' })
                                     } else if (i === 2 && content >= 400) {
-                                        $(dt[i]).css('background-color', '#de5d6e')
+                                        $(dt[i]).css({ 'background-color': '#F93005', 'font-weight': 'bold', 'color': 'white', 'border': 'ridge' })
                                     } else {
-                                        $(dt[i]).css('background-color', '#99ff9c')
+                                        $(dt[i]).css({ 'background-color': '#54F905', 'font-weight': 'bold', 'border': 'ridge' })
                                     }
                                 }
                             }
@@ -144,6 +159,21 @@
             socket.on('temp', plotGraph);
             socket.on('humidity', plotGraph);
             socket.on('airQ', plotGraph);
+            socket.on('waMessage', displayMessageSent);
+
+            async function displayMessageSent(data) {
+                $('.message-display').css({ 'display': 'block', 'height': '30px', 'width': '40%', 'margin-left': '30%' });
+                $('.message-display').css('background-color', getRandomColor());
+                $('.message-display span').css({ 'color': 'white', 'margin-top': '8px' });
+                $('.message-display span').text(` ${data.name} (${data.number})`);
+                await wait(3500);
+                $('.message-display').css({ 'display': 'none' });
+            }
+
+            function getRandomColor() {
+                var hex = Math.floor(Math.random() * 0xFFFFFF);
+                return "#" + ("000000" + hex.toString(16)).substr(-6);
+            }
 
             let dataObj = {};
 
@@ -170,7 +200,7 @@
                     return;
                 }
 
-                document.getElementById('date').innerHTML = data.date; //update the date
+                document.getElementById('date').innerHTML = new Date().toLocaleString(); //update the date
                 if (chart.data.labels.length != 15) { //If we have less than 15 data points in the graph
                     chart.data.labels.push(data.time);  //Add time in x-axis
                     chart.data.datasets.forEach((dataset) => {

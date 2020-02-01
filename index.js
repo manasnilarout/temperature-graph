@@ -14,7 +14,7 @@ const CONSTANTS = {
         HUMIDITY: 200,
         AIR_Q: 400
     },
-    WAIT_TIME: 30000
+    WAIT_TIME: 10000
 };
 
 const accountSid = CONSTANTS.ACCOUNT_SID;
@@ -69,7 +69,7 @@ async function parseSerialPortData(dataString) {
                 if (Number(temp) >= CONSTANTS.THRESHOLD.TEMPERATURE) {
                     await sendMessage(
                         receiver,
-                        `Temperature exceeded *45 degrees*, current temperature is *${temp} degrees*. Please check the issue.`
+                        `Temperature exceeded *${CONSTANTS.THRESHOLD.TEMPERATURE} degrees*, current temperature is *${temp} degrees*. Please check the issue.`
                     );
                 }
             }
@@ -82,7 +82,7 @@ async function parseSerialPortData(dataString) {
                 if (Number(humidity) >= CONSTANTS.THRESHOLD.HUMIDITY) {
                     await sendMessage(
                         receiver,
-                        `Humidity exceeded *30 grams per cubic metre*, current humidity in air is *${humidity} grams per cubic metre*. Please check the issue.`
+                        `Humidity exceeded *${CONSTANTS.THRESHOLD.HUMIDITY} grams per cubic metre*, current humidity in air is *${humidity} grams per cubic metre*. Please check the issue.`
                     );
                 }
             }
@@ -95,7 +95,7 @@ async function parseSerialPortData(dataString) {
                 if (Number(airQ) >= CONSTANTS.THRESHOLD.AIR_Q) {
                     await sendMessage(
                         receiver,
-                        `AirQ exceeded *300 PPM(parts per million)*, current AirQ measure is *${airQ} PPM(parts per million)*. Please check the issue.`
+                        `AirQ exceeded *${CONSTANTS.THRESHOLD.AIR_Q} PPM(parts per million)*, current AirQ measure is *${airQ} PPM(parts per million)*. Please check the issue.`
                     );
                 }
             }
@@ -121,6 +121,11 @@ function emitData(data, param) {
     });
 }
 
+function emitContactInfo(contact) {
+    log('Emitting whatsapp message event');
+    io.sockets.emit('waMessage', { name: contact.name, number: contact.number });
+}
+
 /**
  * Method to forward message using twilio sandbox number.
  * @param {string} number Contact number where message needs to be forwarded.
@@ -135,6 +140,7 @@ const sendMessage = async function (number, messageBody) {
     return new Promise(async (res, rej) => {
         try {
             log(`Sending message to => ${number}`);
+            emitContactInfo({name: 'Krishna', number: number});
             client.messages
                 .create({
                     body: messageBody,
